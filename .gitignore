@@ -1,3 +1,15 @@
 venv
 
 .env
+
+db.sqlite3
+
+# Python cache
+__pycache__/
+*.pyc
+
+**/migrations/*.py
+!**/migrations/__init__.py
+
+# Logs
+*.log
