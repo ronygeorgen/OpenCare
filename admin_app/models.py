@@ -8,44 +8,44 @@ User = get_user_model()
 class HealthcareFacility(models.Model):
     """Model for healthcare facilities."""
     name = models.CharField(max_length=255)
-    description = models.TextField()
+    description = models.TextField(null=True, blank=True)
     location = models.CharField(max_length=500)
     lat = models.FloatField()
     lng = models.FloatField()
     place_id = models.CharField(max_length=255)
     
     # Services offered by the facility
-    provides_new_patient_exam = models.BooleanField(default=True)
+    provides_new_patient_exam = models.BooleanField(default=True, null=True, blank=True)
     
     # Dental Issues
-    treats_toothache = models.BooleanField(default=True)
-    treats_sensitive_gums = models.BooleanField(default=True)
-    treats_tmj = models.BooleanField(default=True)
-    provides_night_guard = models.BooleanField(default=True)
+    treats_toothache = models.BooleanField(default=True, null=True, blank=True)
+    treats_sensitive_gums = models.BooleanField(default=True, null=True, blank=True)
+    treats_tmj = models.BooleanField(default=True, null=True, blank=True)
+    provides_night_guard = models.BooleanField(default=True, null=True, blank=True)
     
     # Tooth Repair
-    provides_fillings = models.BooleanField(default=True)
-    repairs_chipped_teeth = models.BooleanField(default=True)
-    provides_root_canal = models.BooleanField(default=True)
-    provides_new_crown = models.BooleanField(default=True)
-    repairs_loose_crown = models.BooleanField(default=True)
-    replaces_lost_crown = models.BooleanField(default=True)
+    provides_fillings = models.BooleanField(default=True, null=True, blank=True)
+    repairs_chipped_teeth = models.BooleanField(default=True, null=True, blank=True)
+    provides_root_canal = models.BooleanField(default=True, null=True, blank=True)
+    provides_new_crown = models.BooleanField(default=True, null=True, blank=True)
+    repairs_loose_crown = models.BooleanField(default=True, null=True, blank=True)
+    replaces_lost_crown = models.BooleanField(default=True, null=True, blank=True)
     
     # Tooth Extraction/Replacement
-    extracts_wisdom_teeth = models.BooleanField(default=True)
-    extracts_non_wisdom_teeth = models.BooleanField(default=True)
-    treats_missing_tooth = models.BooleanField(default=True)
-    provides_implants = models.BooleanField(default=True)
-    provides_bridge_dentures = models.BooleanField(default=True)
+    extracts_wisdom_teeth = models.BooleanField(default=True, null=True, blank=True)
+    extracts_non_wisdom_teeth = models.BooleanField(default=True, null=True, blank=True)
+    treats_missing_tooth = models.BooleanField(default=True, null=True, blank=True)
+    provides_implants = models.BooleanField(default=True, null=True, blank=True)
+    provides_bridge_dentures = models.BooleanField(default=True, null=True, blank=True)
     
     # Orthodontics
-    provides_new_retainer = models.BooleanField(default=True)
-    repairs_broken_retainer = models.BooleanField(default=True)
-    provides_braces_invisalign = models.BooleanField(default=True)
+    provides_new_retainer = models.BooleanField(default=True, null=True, blank=True)
+    repairs_broken_retainer = models.BooleanField(default=True, null=True, blank=True)
+    provides_braces_invisalign = models.BooleanField(default=True, null=True, blank=True)
     
     # Cosmetic
-    provides_whitening = models.BooleanField(default=True)
-    provides_veneers = models.BooleanField(default=True)
+    provides_whitening = models.BooleanField(default=True, null=True, blank=True)
+    provides_veneers = models.BooleanField(default=True, null=True, blank=True)
     
     # Insurance providers accepted
     accepted_insurance_providers = models.ManyToManyField('InsuranceProvider', blank=True)
@@ -53,10 +53,10 @@ class HealthcareFacility(models.Model):
     # Operating hours handled by FacilitySchedule
     
     # Quality factors
-    rating = models.DecimalField(max_digits=3, decimal_places=2, default=5.0)
-    modern_facility = models.BooleanField(default=False)
-    dentist_experience_years = models.IntegerField(default=0)
-    
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=5.0, null=True, blank=True  )
+    modern_facility = models.BooleanField(default=False, null=True, blank=True)
+    dentist_experience_years = models.IntegerField(default=0, null=True, blank=True  )
+  
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -104,12 +104,12 @@ class FacilitySchedule(models.Model):
     close_time = models.CharField(max_length=5, blank=True)  # Format: "HH:MM"
     
     # Time slot categorization for easier filtering
-    is_early = models.BooleanField(default=False)  # Before 9am
-    is_morning = models.BooleanField(default=False)  # 9am - 12pm
-    is_noon = models.BooleanField(default=False)  # 12pm - 2pm
-    is_afternoon = models.BooleanField(default=False)  # 2pm - 5pm
-    is_evening = models.BooleanField(default=False)  # After 5pm
-    is_weekend = models.BooleanField(default=False)  # Sat or Sun
+    is_early = models.BooleanField(default=False, null=True, blank=True)  # Before 9am
+    is_morning = models.BooleanField(default=False, null=True, blank=True)  # 9am - 12pm
+    is_noon = models.BooleanField(default=False, null=True, blank=True)  # 12pm - 2pm
+    is_afternoon = models.BooleanField(default=False, null=True, blank=True)  # 2pm - 5pm
+    is_evening = models.BooleanField(default=False, null=True, blank=True)  # After 5pm
+    is_weekend = models.BooleanField(default=False, null=True, blank=True)  # Sat or Sun
     
     def save(self, *args, **kwargs):
         # Auto-calculate time slot booleans based on open and close times
@@ -151,7 +151,7 @@ class FacilityImage(models.Model):
 class InsuranceProvider(models.Model):
     """Model for insurance providers."""
     name = models.CharField(max_length=255)
-    is_major = models.BooleanField(default=False)  # True for commonly used providers
+    is_major = models.BooleanField(default=False, null=True, blank=True)  # True for commonly used providers
 
     def __str__(self):
         return self.name
@@ -209,33 +209,33 @@ class PatientPreferences(models.Model):
     search_lng = models.FloatField()
     
     # Treatment preferences
-    new_patient_exam = models.BooleanField(default=False)
+    new_patient_exam = models.BooleanField(default=False, null=True, blank=True)
     
     # Specific concerns
-    concern_toothache = models.BooleanField(default=False)
-    concern_sensitive_gums = models.BooleanField(default=False)
-    concern_tmj = models.BooleanField(default=False)
-    concern_night_guard = models.BooleanField(default=False)
+    concern_toothache = models.BooleanField(default=False, null=True, blank=True)
+    concern_sensitive_gums = models.BooleanField(default=False, null=True, blank=True)
+    concern_tmj = models.BooleanField(default=False, null=True, blank=True)
+    concern_night_guard = models.BooleanField(default=False, null=True, blank=True)
     
-    concern_cavity = models.BooleanField(default=False)
-    concern_chipped_tooth = models.BooleanField(default=False)
-    concern_root_canal = models.BooleanField(default=False)
-    concern_new_crown = models.BooleanField(default=False)
-    concern_loose_crown = models.BooleanField(default=False)
-    concern_lost_crown = models.BooleanField(default=False)
+    concern_cavity = models.BooleanField(default=False, null=True, blank=True)
+    concern_chipped_tooth = models.BooleanField(default=False, null=True, blank=True)
+    concern_root_canal = models.BooleanField(default=False, null=True, blank=True)
+    concern_new_crown = models.BooleanField(default=False, null=True, blank=True)
+    concern_loose_crown = models.BooleanField(default=False, null=True, blank=True)
+    concern_lost_crown = models.BooleanField(default=False, null=True, blank=True)
     
-    concern_wisdom_extraction = models.BooleanField(default=False)
-    concern_tooth_extraction = models.BooleanField(default=False)
-    concern_missing_tooth = models.BooleanField(default=False)
-    concern_implant = models.BooleanField(default=False)
-    concern_bridge_dentures = models.BooleanField(default=False)
+    concern_wisdom_extraction = models.BooleanField(default=False, null=True, blank=True)
+    concern_tooth_extraction = models.BooleanField(default=False, null=True, blank=True)
+    concern_missing_tooth = models.BooleanField(default=False, null=True, blank=True)
+    concern_implant = models.BooleanField(default=False, null=True, blank=True)
+    concern_bridge_dentures = models.BooleanField(default=False, null=True, blank=True)
     
-    concern_new_retainer = models.BooleanField(default=False)
-    concern_broken_retainer = models.BooleanField(default=False)
-    concern_braces_invisalign = models.BooleanField(default=False)
+    concern_new_retainer = models.BooleanField(default=False, null=True, blank=True)
+    concern_broken_retainer = models.BooleanField(default=False, null=True, blank=True)
+    concern_braces_invisalign = models.BooleanField(default=False, null=True, blank=True)
     
-    concern_whitening = models.BooleanField(default=False)
-    concern_veneers = models.BooleanField(default=False)
+    concern_whitening = models.BooleanField(default=False, null=True, blank=True)
+    concern_veneers = models.BooleanField(default=False, null=True, blank=True)
     
     other_concerns = models.TextField(blank=True)
     
@@ -243,13 +243,13 @@ class PatientPreferences(models.Model):
     dental_wellness_feeling = models.CharField(max_length=20, choices=DENTAL_COMFORT_CHOICES, blank=True, null=True)
     
     # Important factors
-    important_rating = models.BooleanField(default=False)
-    important_location = models.BooleanField(default=False)
-    important_modern_practice = models.BooleanField(default=False)
-    important_insurance = models.BooleanField(default=False)
-    important_schedule = models.BooleanField(default=False)
-    important_experience = models.BooleanField(default=False)
-    important_cost = models.BooleanField(default=False)
+    important_rating = models.BooleanField(default=False, null=True, blank=True)
+    important_location = models.BooleanField(default=False, null=True, blank=True)
+    important_modern_practice = models.BooleanField(default=False, null=True, blank=True)
+    important_insurance = models.BooleanField(default=False, null=True, blank=True)
+    important_schedule = models.BooleanField(default=False, null=True, blank=True)
+    important_experience = models.BooleanField(default=False, null=True, blank=True)
+    important_cost = models.BooleanField(default=False, null=True, blank=True)
     
     # Last visit
     last_visit = models.CharField(max_length=20, choices=LAST_VISIT_CHOICES, blank=True, null=True)
@@ -258,22 +258,22 @@ class PatientPreferences(models.Model):
     nervousness = models.CharField(max_length=20, choices=NERVOUSNESS_CHOICES, blank=True, null=True)
     
     # Preferred time slots
-    prefers_early = models.BooleanField(default=False)
-    prefers_morning = models.BooleanField(default=False)
-    prefers_noon = models.BooleanField(default=False)
-    prefers_afternoon = models.BooleanField(default=False)
-    prefers_evening = models.BooleanField(default=False)
-    prefers_weekend = models.BooleanField(default=False)
+    prefers_early = models.BooleanField(default=False, null=True, blank=True)
+    prefers_morning = models.BooleanField(default=False, null=True, blank=True)
+    prefers_noon = models.BooleanField(default=False, null=True, blank=True)
+    prefers_afternoon = models.BooleanField(default=False, null=True, blank=True)
+    prefers_evening = models.BooleanField(default=False, null=True, blank=True)
+    prefers_weekend = models.BooleanField(default=False, null=True, blank=True)
     
     # Urgency
     visit_urgency = models.CharField(max_length=20, choices=URGENCY_CHOICES, blank=True, null=True)
     
     # Insurance
-    has_insurance = models.BooleanField(default=False)
+    has_insurance = models.BooleanField(default=False, null=True, blank=True)
     insurance_provider = models.ForeignKey(InsuranceProvider, on_delete=models.SET_NULL, null=True, blank=True)
     
     # Social assistance
-    using_social_assistance = models.BooleanField(default=False)
+    using_social_assistance = models.BooleanField(default=False, null=True, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
 
