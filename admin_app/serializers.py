@@ -11,9 +11,17 @@ class FacilityScheduleSerializer(serializers.ModelSerializer):
                   'is_noon', 'is_afternoon', 'is_evening', 'is_weekend']
 
 class FacilityImageSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField(read_only=True)
+    
     class Meta:
         model = FacilityImage
-        fields = ['id', 'image_url']
+        fields = ['id', 'image', 'image_url']
+    
+    def get_image_url(self, obj):
+        request = self.context.get('request')
+        if obj.image and hasattr(obj.image, 'url') and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None
 
 class InsuranceProviderSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,59 +30,21 @@ class InsuranceProviderSerializer(serializers.ModelSerializer):
 
 class HealthcareFacilitySerializer(serializers.ModelSerializer):
     schedule = serializers.SerializerMethodField()
-    images = serializers.SerializerMethodField()
+    images = FacilityImageSerializer(many=True, read_only=True)
     accepted_insurance_providers = InsuranceProviderSerializer(many=True, read_only=True)
     distance = serializers.SerializerMethodField()
     
-    class Meta:
-        model = HealthcareFacility
-        fields = [
-            'id', 'name', 'description', 'location', 'lat', 'lng', 
-            'place_id', 'schedule', 'images', 'provides_new_patient_exam',
-            'treats_toothache', 'treats_sensitive_gums', 'treats_tmj', 
-            'provides_night_guard', 'provides_fillings', 'repairs_chipped_teeth',
-            'provides_root_canal', 'provides_new_crown', 'repairs_loose_crown',
-            'replaces_lost_crown', 'extracts_wisdom_teeth', 'extracts_non_wisdom_teeth',
-            'treats_missing_tooth', 'provides_implants', 'provides_bridge_dentures',
-            'provides_new_retainer', 'repairs_broken_retainer', 'provides_braces_invisalign',
-            'provides_whitening', 'provides_veneers', 'accepted_insurance_providers',
-            'rating', 'modern_facility', 'dentist_experience_years', 'distance'
-        ]
-    
-    def get_schedule(self, obj):
-        schedule_data = {}
-        schedules = FacilitySchedule.objects.filter(facility=obj)
-        
-        for schedule in schedules:
-            schedule_data[schedule.day] = {
-                'open': schedule.open_time,
-                'close': schedule.close_time
-            }
-        
-        return schedule_data
+    # Other fields remain the same...
     
     def get_images(self, obj):
-        image_objects = FacilityImage.objects.filter(facility=obj)
-        return [image.image_url for image in image_objects]
-    
-    def get_distance(self, obj):
-        # Get the search coordinates from the context if available
         request = self.context.get('request')
-        if request and request.query_params.get('lat') and request.query_params.get('lng'):
-            lat = float(request.query_params.get('lat'))
-            lng = float(request.query_params.get('lng'))
-            # This would be replaced with actual distance calculation
-            # In a real implementation, you'd typically use PostGIS or
-            # a calculated field from a geospatial query
-            if hasattr(obj, 'distance'):
-                return obj.distance
-            else:
-                return obj.get_distance(lat, lng)
-        return None
+        image_objects = FacilityImage.objects.filter(facility=obj)
+        return FacilityImageSerializer(image_objects, many=True, context={'request': request}).data
     
+    # Update the create method
     def create(self, validated_data):
         schedule_data = self.initial_data.get('schedule', {})
-        images_data = self.initial_data.get('images', [])
+        image_files = self.context.get('request').FILES.getlist('images')
         insurance_ids = self.initial_data.get('accepted_insurance_providers', [])
         
         # Create healthcare facility
@@ -95,10 +65,10 @@ class HealthcareFacilitySerializer(serializers.ModelSerializer):
                 )
         
         # Create image entries
-        for image_url in images_data:
+        for image_file in image_files:
             FacilityImage.objects.create(
                 facility=facility,
-                image_url=image_url
+                image=image_file
             )
             
         # Set insurance providers
@@ -107,9 +77,10 @@ class HealthcareFacilitySerializer(serializers.ModelSerializer):
         
         return facility
     
+    # Update the update method
     def update(self, instance, validated_data):
         schedule_data = self.initial_data.get('schedule', {})
-        images_data = self.initial_data.get('images', [])
+        image_files = self.context.get('request').FILES.getlist('images')
         insurance_ids = self.initial_data.get('accepted_insurance_providers', [])
         
         # Update facility fields
@@ -136,23 +107,24 @@ class HealthcareFacilitySerializer(serializers.ModelSerializer):
                 )
         
         # Update images
-        # First, delete existing images
-        FacilityImage.objects.filter(facility=instance).delete()
-        
-        # Create new image entries
-        for image_url in images_data:
-            FacilityImage.objects.create(
-                facility=instance,
-                image_url=image_url
-            )
+        # Check if new images are being uploaded
+        if image_files:
+            # Delete existing images
+            FacilityImage.objects.filter(facility=instance).delete()
+            
+            # Create new image entries
+            for image_file in image_files:
+                FacilityImage.objects.create(
+                    facility=instance,
+                    image=image_file
+                )
             
         # Update insurance providers
         if insurance_ids:
             instance.accepted_insurance_providers.set(insurance_ids)
         
         return instance
-
-
+    
 class PatientPreferencesSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientPreferences

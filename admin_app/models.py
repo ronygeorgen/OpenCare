@@ -2,6 +2,9 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.contrib.postgres.fields import ArrayField
 from django.db.models import F, Func
+from django.conf import settings
+import os
+from datetime import time
 
 User = get_user_model()
 
@@ -134,10 +137,19 @@ class FacilitySchedule(models.Model):
         verbose_name_plural = "Facility Schedules"
 
 
+def facility_image_path(instance, filename):
+    """Function to determine the file path for facility images"""
+    # Get file extension
+    ext = filename.split('.')[-1]
+    # Create filename format: facility_id-timestamp.extension
+    filename = f'{instance.facility.id}-{int(time.time())}.{ext}'
+    # Return the complete path
+    return os.path.join('facility_images', filename)
+
 class FacilityImage(models.Model):
     """Model for healthcare facility images."""
     facility = models.ForeignKey(HealthcareFacility, on_delete=models.CASCADE, related_name='images')
-    image_url = models.URLField(max_length=500)
+    image = models.ImageField(upload_to=facility_image_path)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
