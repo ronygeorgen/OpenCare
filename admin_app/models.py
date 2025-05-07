@@ -4,7 +4,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.db.models import F, Func
 from django.conf import settings
 import os
-from datetime import time
+import time
 
 User = get_user_model()
 
@@ -149,7 +149,7 @@ def facility_image_path(instance, filename):
 class FacilityImage(models.Model):
     """Model for healthcare facility images."""
     facility = models.ForeignKey(HealthcareFacility, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to=facility_image_path)
+    image = models.ImageField(upload_to=facility_image_path, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

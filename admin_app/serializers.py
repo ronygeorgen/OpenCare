@@ -3,6 +3,8 @@ from .models import (
     HealthcareFacility, FacilitySchedule, FacilityImage, 
     InsuranceProvider, PatientPreferences
 )
+from geopy.distance import geodesic
+
 
 class FacilityScheduleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -28,11 +30,18 @@ class InsuranceProviderSerializer(serializers.ModelSerializer):
         model = InsuranceProvider
         fields = ['id', 'name', 'is_major']
 
+
+import json
+
 class HealthcareFacilitySerializer(serializers.ModelSerializer):
     schedule = serializers.SerializerMethodField()
     images = FacilityImageSerializer(many=True, read_only=True)
     accepted_insurance_providers = InsuranceProviderSerializer(many=True, read_only=True)
     distance = serializers.SerializerMethodField()
+
+    class Meta:
+        model = HealthcareFacility
+        fields = '__all__'
     
     # Other fields remain the same...
     
@@ -41,21 +50,34 @@ class HealthcareFacilitySerializer(serializers.ModelSerializer):
         image_objects = FacilityImage.objects.filter(facility=obj)
         return FacilityImageSerializer(image_objects, many=True, context={'request': request}).data
     
+
+    def get_distance(self, obj):
+        request = self.context.get('request')
+        if request:
+            user_lat = request.query_params.get('lat')
+            user_lng = request.query_params.get('lng')
+            if user_lat and user_lng:
+                facility_coords = (obj.lat, obj.lng)
+                user_coords = (float(user_lat), float(user_lng))
+                return round(geodesic(user_coords, facility_coords).km, 2)
+        return None
+    
     # Update the create method
     def create(self, validated_data):
-        schedule_data = self.initial_data.get('schedule', {})
+        schedule_raw = self.initial_data.get('schedule', '{}')
+        try:
+            schedule_data = json.loads(schedule_raw)
+        except json.JSONDecodeError:
+            schedule_data = {}
+
         image_files = self.context.get('request').FILES.getlist('images')
         insurance_ids = self.initial_data.get('accepted_insurance_providers', [])
-        
-        # Create healthcare facility
+
         facility = HealthcareFacility.objects.create(**validated_data)
-        
-        # Create schedule entries for each day
+
         for day, times in schedule_data.items():
             open_time = times.get('open', '')
             close_time = times.get('close', '')
-            
-            # Only create entries if at least one time is set
             if open_time or close_time:
                 FacilitySchedule.objects.create(
                     facility=facility,
@@ -63,18 +85,16 @@ class HealthcareFacilitySerializer(serializers.ModelSerializer):
                     open_time=open_time,
                     close_time=close_time
                 )
-        
-        # Create image entries
+
         for image_file in image_files:
             FacilityImage.objects.create(
                 facility=facility,
                 image=image_file
             )
-            
-        # Set insurance providers
+
         if insurance_ids:
             facility.accepted_insurance_providers.set(insurance_ids)
-        
+
         return facility
     
     # Update the update method
@@ -125,6 +145,18 @@ class HealthcareFacilitySerializer(serializers.ModelSerializer):
         
         return instance
     
+
+    def get_schedule(self, obj):
+        schedules = FacilitySchedule.objects.filter(facility=obj)
+        return [
+            {
+                "day": schedule.day,
+                "open": schedule.open_time,
+                "close": schedule.close_time
+            }
+            for schedule in schedules
+        ]
+        
 class PatientPreferencesSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientPreferences
