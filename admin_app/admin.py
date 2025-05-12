@@ -1,7 +1,6 @@
 from django.contrib import admin
-from admin_app.models import HealthcareFacility,PatientPreferences
+from admin_app.models import DentalClinic
 
-admin.site.register(HealthcareFacility)
-admin.site.register(PatientPreferences)
+admin.site.register(DentalClinic)
 
 # Register your models here.

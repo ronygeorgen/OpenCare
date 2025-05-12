@@ -33,6 +33,8 @@ ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 AUTH_USER_MODEL = 'authentication.User'
 
+GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
+
 # Application definition
 
 INSTALLED_APPS = [

@@ -1,18 +1,11 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import (
-    HealthcareFacilityViewSet,
-    InsuranceProviderViewSet, 
-    PatientPreferencesViewSet
-)
+from .views import DentalClinicViewSet, get_place_details
 
-# Create a router and register our viewsets with it.
 router = DefaultRouter()
-router.register(r'facilities', HealthcareFacilityViewSet, basename='facility')
-router.register(r'insurance-providers', InsuranceProviderViewSet, basename='insurance')
-router.register(r'patient-preferences', PatientPreferencesViewSet, basename='preferences')
+router.register(r'clinics', DentalClinicViewSet)
 
-# The API URLs are now determined automatically by the router.
 urlpatterns = [
     path('', include(router.urls)),
+    path("place-details/", get_place_details, name="place-details"),
 ]
