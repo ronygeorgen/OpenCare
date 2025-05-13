@@ -57,7 +57,7 @@ class BusinessHours(models.Model):
 class ClinicImage(models.Model):
     clinic = models.ForeignKey(DentalClinic, on_delete=models.CASCADE, related_name='images')
     image_file = models.ImageField(upload_to='clinic_images/', blank=True, null=True)
-    image_url = models.URLField(blank=True, null=True)
+    image_url = models.TextField(blank=True, null=True)
     caption = models.CharField(max_length=255, blank=True, null=True)
     is_primary = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
