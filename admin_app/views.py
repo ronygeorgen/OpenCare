@@ -1,7 +1,8 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.decorators import action
-from .models import DentalClinic
+from rest_framework.decorators import action, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from .models import DentalClinic, ClinicImage
 from .serializers import DentalClinicSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import api_view, permission_classes
@@ -33,9 +34,17 @@ class DentalClinicViewSet(viewsets.ModelViewSet):
     queryset = DentalClinic.objects.all()
     serializer_class = DentalClinicSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_serializer_context(self):
+        """Add request to serializer context so it can access file data"""
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
+        print('request structure in views.py ==== ', request.data)
         if serializer.is_valid():
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
