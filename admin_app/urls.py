@@ -8,4 +8,5 @@ router.register(r'clinics', DentalClinicViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path("place-details/", get_place_details, name="place-details"),
+    
 ]

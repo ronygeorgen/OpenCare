@@ -4,7 +4,7 @@ from rest_framework.decorators import action, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import DentalClinic, ClinicImage
 from .serializers import DentalClinicSerializer
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.decorators import api_view, permission_classes
 import math
 import requests
@@ -35,6 +35,12 @@ class DentalClinicViewSet(viewsets.ModelViewSet):
     serializer_class = DentalClinicSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_permissions(self):
+        # Allow unauthenticated access only to the 'nearby' action
+        if self.action == 'nearby':
+            return [AllowAny()]
+        return [IsAuthenticated(), IsAdminUser()]
 
     def get_serializer_context(self):
         """Add request to serializer context so it can access file data"""
@@ -130,3 +136,83 @@ class DentalClinicViewSet(viewsets.ModelViewSet):
         r = 6371  # Radius of earth in kilometers
         
         return c * r
+
+
+class DentalNearmeView(viewsets.ModelViewSet):
+    queryset = DentalClinic.objects.all()
+    serializer_class = DentalClinicSerializer
+    permission_classes = [AllowAny]
+    # parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    @action(detail=False, methods=['get'])
+    def nearby(self, request):
+        """
+        Find clinics within a given radius (default: 10km) of the provided coordinates.
+        
+        Query parameters:
+        - lat: user's latitude (required)
+        - lng: user's longitude (required)
+        - radius: search radius in kilometers (optional, default: 10)
+        """
+        latitude = request.query_params.get('lat')
+        longitude = request.query_params.get('lng')
+        radius = request.query_params.get('radius', 10)  # Default radius: 10km
+        
+        if not latitude or not longitude:
+            return Response(
+                {"error": "Latitude and longitude parameters are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            latitude = float(latitude)
+            longitude = float(longitude)
+            radius = float(radius)
+        except ValueError:
+            return Response(
+                {"error": "Invalid latitude, longitude, or radius value"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Calculate nearby clinics using the Haversine formula
+        clinics = self.get_queryset()
+        
+        # Add distance to each clinic
+        nearby_clinics = []
+        for clinic in clinics:
+            distance = self.haversine_distance(
+                latitude, longitude, 
+                clinic.latitude, clinic.longitude
+            )
+            
+            # Check if clinic is within the radius
+            if distance <= radius:
+                clinic.distance = distance
+                nearby_clinics.append(clinic)
+        
+        # Sort by distance
+        nearby_clinics.sort(key=lambda x: x.distance)
+        
+        serializer = self.get_serializer(nearby_clinics, many=True)
+        return Response(serializer.data)
+    
+    @staticmethod
+    def haversine_distance(lat1, lon1, lat2, lon2):
+        """
+        Calculate the great circle distance between two points 
+        on the earth (specified in decimal degrees)
+        Returns distance in kilometers
+        """
+        # Convert decimal degrees to radians
+        lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+        
+        # Haversine formula
+        dlon = lon2 - lon1
+        dlat = lat2 - lat1
+        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+        c = 2 * math.asin(math.sqrt(a))
+        r = 6371  # Radius of earth in kilometers
+        
+        return c * r
+
+
