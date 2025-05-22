@@ -10,6 +10,8 @@ import math
 import requests
 from django.http import JsonResponse
 from django.conf import settings
+from rest_framework.views import APIView
+from authentication.models import VisitedUserData
 
 
 @api_view(['GET'])
@@ -78,7 +80,7 @@ class DentalClinicViewSet(viewsets.ModelViewSet):
         """
         latitude = request.query_params.get('lat')
         longitude = request.query_params.get('lng')
-        radius = request.query_params.get('radius', 10)  # Default radius: 10km
+        radius = request.query_params.get('radius', 50)
         
         if not latitude or not longitude:
             return Response(
@@ -216,3 +218,42 @@ class DentalNearmeView(viewsets.ModelViewSet):
         return c * r
 
 
+
+
+
+class VisitedEmailView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+            answers = request.data.get("answers")
+            print("answers: ", answers)
+
+            if not answers or "email" not in answers:
+                return Response({"error": "Email is required"}, status=400)
+
+            email = answers["email"]
+
+            # Save or update to DB
+            obj, created = VisitedUserData.objects.update_or_create(
+                email=email,
+                defaults={
+                    "emergency": answers.get("emergency", ""),
+                    "factors": answers.get("factors", []),
+                    "lastVisit": answers.get("lastVisit", ""),
+                    "anxiety": answers.get("anxiety", ""),
+                    "timePreference": answers.get("timePreference", []),
+                    "hasInsurance": answers.get("hasInsurance", ""),
+                    "insuranceProvider": answers.get("insuranceProvider", ""),
+                    "paymentOption": answers.get("paymentOption", ""),
+                }
+            )
+
+            # Forward to external webhook
+            try:
+                webhook_url = "https://services.leadconnectorhq.com/hooks/4y5GUDosyK73YqjbTlg1/webhook-trigger/a9182ada-9332-440d-92a9-4dfd675ddb0a"
+                response = requests.post(webhook_url, json=answers)
+                response.raise_for_status()
+            except requests.RequestException as e:
+                return Response({"error": "Failed to send data to webhook", "details": str(e)}, status=500)
+
+            return Response({"message": "Data saved and forwarded successfully"})
